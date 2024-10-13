@@ -44,6 +44,28 @@ class ProductTest extends TestCase
         });
     }
 
+    public function test_homepage_contains_table_product()
+    {
+        $product = Product::create([
+            'name' => 'table',
+            'price' => 100
+        ]);
+
+        $response = $this->actingAs($this->user)->get('/products');
+
+        $response->assertOk();
+        $response->assertSeeText('table');
+    }
+
+    public function test_homepage_contains_product_in_order()
+    {
+        [$product1, $product2] = Product::factory()->count(2)->create();
+
+        $response = $this->actingAs($this->user)->get('/products');
+        $response->assertOk();
+        $response->assertSeeInOrder([$product1->name, $product2->name]);
+    }
+
     public function test_paginated_products_table_doesnt_contains_11th_records()
     {
         $products = Product::factory()->count(11)->create();
