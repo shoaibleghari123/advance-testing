@@ -23,7 +23,7 @@ class ProductTest extends TestCase
     {
         $response = $this->actingAs($this->user)->get('/products');
 
-        $response->assertStatus(200);
+        $response->assertOk(); //200 code
         $response->assertDontSee('No products found');
     }
 
@@ -36,7 +36,7 @@ class ProductTest extends TestCase
 
         $response = $this->actingAs($this->user)->get('/products');
 
-        $response->assertStatus(200);
+        $response->assertOk(); //200 code
         $response->assertDontSee('No products found');
         $response->assertSee('Product 1');
         $response->assertViewHas('products', function ($products) use ($product) {
@@ -73,7 +73,7 @@ class ProductTest extends TestCase
 
         $response = $this->actingAs($this->user)->get('/products');
 
-        $response->assertStatus(200);
+        $response->assertOk(); //200 code
         $response->assertViewHas('products', function ($collection) use ($lastProduct) {
             return !$collection->contains($lastProduct);
         });
@@ -83,7 +83,7 @@ class ProductTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->get('/products');
 
-        $response->assertStatus(200);
+        $response->assertOk(); //200 code
         $response->assertSee('Create Product');
     }
 
@@ -91,7 +91,7 @@ class ProductTest extends TestCase
     {
         $response = $this->actingAs($this->user)->get('/products');
 
-        $response->assertStatus(200);
+        $response->assertOk(); //200 code
         $response->assertDontSee('Create Product');
     }
 
@@ -99,15 +99,14 @@ class ProductTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->get('/product/create');
 
-        $response->assertStatus(200);
-
+        $response->assertOk(); //200 code
     }
 
     public function test_non_admin_cannot_access_product_create_page()
     {
         $response = $this->actingAs($this->user)->get('/product/create');
 
-        $response->assertStatus(403);
+        $response->assertForbidden(); //403 code
     }
 
     public function test_product_store_successfully()
@@ -119,8 +118,7 @@ class ProductTest extends TestCase
 
         $response = $this->actingAs($this->admin)->post('/product/store', $product);
 
-        $response->assertStatus(302);
-        $response->assertRedirect('/products');
+        $response->assertRedirect('/products'); //302 code
         $this->assertDatabaseHas('product', $product);
 
         $lastProduct = Product::latest()->first();
@@ -134,7 +132,7 @@ class ProductTest extends TestCase
 
         $response = $this->actingAs($this->admin)->get('/product/' . $product->id . '/edit');
 
-        $response->assertStatus(200);
+        $response->assertOk(); //200 code
         $response->assertSee('value="'. $product->name . '"', false);
         $response->assertSee('value="'. $product->price . '"', false);
         $response->assertViewHas('product', $product);
@@ -149,8 +147,8 @@ class ProductTest extends TestCase
         ];
 
         $response = $this->actingAs($this->admin)->put('/product/' . $product->id, $newProduct);
-        $response->assertStatus(302);
-        $response->assertRedirect('/products');
+
+        $response->assertRedirect('/products'); //302 code
         $this->assertDatabaseHas('product', $newProduct);
         $this->assertDatabaseMissing('product', $product->toArray());
     }
@@ -164,7 +162,7 @@ class ProductTest extends TestCase
             'price' => ''
         ]);
 
-        $response->assertStatus(302);
+        $response->assertRedirect(); //302 code
         $response->assertSessionHasErrors(['name', 'price']);
         $response->assertInvalid('price');
     }
@@ -175,8 +173,8 @@ class ProductTest extends TestCase
 
         $response = $this->actingAs($this->admin)->delete('product/'.$product->id);
 
-        $response->assertStatus(302);
-        $response->assertRedirect('/products');
+        $response->assertRedirect('/products');//302 code
+        $response->assertRedirect('/products');//302 code
 
         $this->assertDatabaseMissing('product', $product->toArray());
         $this->assertDatabaseCount('product', 0);
@@ -193,7 +191,7 @@ class ProductTest extends TestCase
 
         $response = $this->actingAs($this->user)->getJson('/api/products');
 
-        $response->assertStatus(200);
+        $response->assertOk(); //200 code
         $response->assertJsonCount(3);
         $response->assertJson($products->toArray());
 
@@ -207,7 +205,8 @@ class ProductTest extends TestCase
         ];
 
         $response = $this->postJson('/api/products', $product);
-        $response->assertStatus(201);
+
+        $response->assertCreated(); //201 code
         $response->assertJson($product);
     }
 
@@ -221,9 +220,12 @@ class ProductTest extends TestCase
         ];
 
         $response = $this->postJson('/api/products', $product);
-        $response->assertStatus(422);
+
+        $response->assertUnprocessable(); //422 code
         $response->assertJsonValidationErrors('name');
 
     }
+
+
 
 }
