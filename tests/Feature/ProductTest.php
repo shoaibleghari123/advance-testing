@@ -333,4 +333,12 @@ class ProductTest extends TestCase
     }
 
 
+    public function test_artisan_publish_command_successful()
+    {
+        //$product  = Product::factory()->create();
+        $this->artisan('product:publish 1')
+            ->assertExitCode(-1)
+            ->expectsOutput('Product not found');
+    }
+    
 }

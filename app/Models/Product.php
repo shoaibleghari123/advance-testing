@@ -12,7 +12,7 @@ class Product extends Model
     use HasFactory;
 
     protected $table = 'product';
-    protected $fillable = ['name', 'price'];
+    protected $fillable = ['name', 'price', 'is_published', 'published_at'];
 
     public function getPriceEurAttribute()
     {
