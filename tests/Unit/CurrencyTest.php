@@ -19,6 +19,11 @@ class CurrencyTest extends TestCase
         $this->assertEquals(98, $result);
     }
 
+    public function test_convert_usd_to_eur_successfully()
+    {
+        $this->assertTrue(98 == (new CurrencyService())->convert(100, 'USD', 'EUR'));
+    }
+
     public function test_convert_usd_to_gbp_return_zero()
     {
         $result = (new CurrencyService())->convert(100, 'USD', 'gbp');
