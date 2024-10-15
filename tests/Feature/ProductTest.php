@@ -176,9 +176,9 @@ class ProductTest extends TestCase
         $response = $this->actingAs($this->admin)->delete('product/'.$product->id);
 
         $response->assertRedirect('/products');//302 code
-        $response->assertRedirect('/products');//302 code
 
         $this->assertDatabaseMissing('product', $product->toArray());
+        $this->assertModelMissing($product);
         $this->assertDatabaseCount('product', 0);
     }
 
@@ -312,6 +312,24 @@ class ProductTest extends TestCase
         }catch (\Exception $e){
             $this->assertInstanceOf(NumberFormatException::class, $e);
         }
+    }
+
+    public function test_product_edit_contains_correct_values()
+    {
+        $product = Product::factory()->create();
+
+        $this->assertDatabaseHas('product',[
+            'name' => $product->name,
+            'price' => $product->price
+        ]);
+
+        //instead of checking column name values, we can use assertModelExists
+         $this->assertModelExists($product); //check eloquent model exists in database
+        $response = $this->actingAs($this->admin)->get('/product/' . $product->id . '/edit');
+        $response->assertOk();
+        $response->assertSee('value="'. $product->name . '"', false);
+        $response->assertSee('value="'. $product->price . '"', false);
+        $response->assertViewHas('product', $product);
     }
 
 
