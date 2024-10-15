@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Product;
 use App\Models\User;
+use App\Services\ProductService;
+use Brick\Math\Exception\NumberFormatException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
@@ -189,12 +191,64 @@ class ProductTest extends TestCase
     {
         $products = Product::factory()->count(3)->create();
 
-        $response = $this->actingAs($this->user)->getJson('/api/products');
+        $response = $this->getJson('/api/products');
 
         $response->assertOk(); //200 code
-        $response->assertJsonCount(3);
-        $response->assertJson($products->toArray());
+        $response->assertJsonCount(3, 'data');
 
+    }
+
+    public function test_api_products_returns_list()
+    {
+        $product1 = Product::factory()->create();
+        $product2 = Product::factory()->create();
+
+        $response = $this->getJson('/api/products');
+
+        $response->assertJsonFragment([
+            'name' => $product1->name,
+            'price' => $product2->price
+        ]);
+
+        $response->assertJsonCount('2', 'data');
+    }
+
+    public function test_product_updated_successful()
+    {
+        $productData =[
+            'name' => 'Product 1',
+            'price' => 100
+        ];
+
+        $product = Product::create($productData);
+
+        $response = $this->putJson('/api/products/' . $product->id, [
+            'name' => 'Product 2',
+            'price' => 200
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonMissing($productData);
+    }
+
+    public function test_api_product_show_successful()
+    {
+        $product = Product::create([
+            'name' => 'Product 1',
+            'price' => 100
+        ]);
+
+        $response = $this->getJson('/api/products/' . $product->id);
+
+        $response->assertJsonPath('data.name', $product->name);
+        $response->assertJsonMissing(['created_at', 'updated_at']);
+        $response->assertJsonStructure([
+            'data' => [
+                'id',
+                'name',
+                'price'
+            ]
+        ]);
     }
 
     public function test_api_product_store_successful()
@@ -207,6 +261,7 @@ class ProductTest extends TestCase
         $response = $this->postJson('/api/products', $product);
 
         $response->assertCreated(); //201 code
+        $response->assertSuccessful(); //but not assertOk()
         $response->assertJson($product);
     }
 
@@ -222,10 +277,42 @@ class ProductTest extends TestCase
         $response = $this->postJson('/api/products', $product);
 
         $response->assertUnprocessable(); //422 code
+        $response->assertJsonMissingValidationErrors('price');
         $response->assertJsonValidationErrors('name');
+        $response->assertInvalid('name');
 
     }
 
+    public function test_product_service_create_returns_product()
+    {
+        $product = (new ProductService())->create('Product 1', 100);
+
+        $this->assertInstanceOf(Product::class, $product);
+    }
+
+    public function test_product_service_create_validation()
+    {
+        $this->expectException(NumberFormatException::class);
+        (new ProductService())->create('Product 1', 100001);
+    }
+
+    public function test_product_service_create_return_validation()
+    {
+        try {
+            (new ProductService())->create('Product 1', 100001);
+        } catch (NumberFormatException $e) {
+            $this->assertEquals('Price is too high', $e->getMessage());
+        }
+    }
+
+    public function test_product_service_create_return_validations()
+    {
+        try{
+            (new ProductService())->create('Product 1', 1000000);
+        }catch (\Exception $e){
+            $this->assertInstanceOf(NumberFormatException::class, $e);
+        }
+    }
 
 
 }
