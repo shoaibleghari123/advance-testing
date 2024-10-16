@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ProductPublishJob;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\ProductService;
@@ -115,17 +116,21 @@ class ProductTest extends TestCase
     {
         $product = [
             'name' => 'Product 1',
-            'price' => 100
+            'price' => 36
         ];
 
-        $response = $this->actingAs($this->admin)->post('/product/store', $product);
+        $response = $this->followingRedirects()->actingAs($this->admin)->post('/product/store', $product);
 
-        $response->assertRedirect('/products'); //302 code
-        $this->assertDatabaseHas('product', $product);
+        $response->assertOk(); //200 code
+        $response->assertSeeText($product['name']);
+        $this->assertDatabaseHas('product', [
+            'name' => 'Product 1',
+            'price' => 3600
+        ]);
 
         $lastProduct = Product::latest()->first();
         $this->assertEquals($product['name'], $lastProduct->name);
-        $this->assertEquals($product['price'], $lastProduct->price);
+        $this->assertEquals($product['price'], $lastProduct->price/100);
     }
 
     public function test_edit_form_contains_product()
@@ -145,13 +150,16 @@ class ProductTest extends TestCase
         $product = Product::factory()->create();
         $newProduct = [
             'name' => 'Product 2',
-            'price' => 200
+            'price' => 28
         ];
 
         $response = $this->actingAs($this->admin)->put('/product/' . $product->id, $newProduct);
 
         $response->assertRedirect('/products'); //302 code
-        $this->assertDatabaseHas('product', $newProduct);
+        $this->assertDatabaseHas('product', [
+            'name' => 'Product 2',
+            'price' => 2800
+        ]);
         $this->assertDatabaseMissing('product', $product->toArray());
     }
 
@@ -255,14 +263,17 @@ class ProductTest extends TestCase
     {
         $product = [
             'name' => 'Product 1',
-            'price' => 100
+            'price' => 25
         ];
 
         $response = $this->postJson('/api/products', $product);
 
         $response->assertCreated(); //201 code
         $response->assertSuccessful(); //but not assertOk()
-        $response->assertJson($product);
+        $response->assertJson([
+            'name' => 'Product 1',
+            'price' => 2500
+        ]);
     }
 
 
@@ -340,5 +351,21 @@ class ProductTest extends TestCase
             ->assertExitCode(-1)
             ->expectsOutput('Product not found');
     }
-    
+
+    public function test_job_product_publish_successful()
+    {
+        $product = Product::factory()->create();
+        $this->assertNull($product->published_at);
+        $this->assertNull($product->is_published);
+
+        (new ProductPublishJob($product->id))->handle();
+
+        $product->refresh();
+
+        $this->assertNotNull($product->published_at);
+        $this->assertEquals('1', $product->is_published);
+
+
+    }
+
 }
