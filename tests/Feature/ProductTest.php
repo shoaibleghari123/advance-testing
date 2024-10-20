@@ -26,6 +26,8 @@ class ProductTest extends TestCase
 
     public function test_homepage_contains_non_empty_table()
     {
+       // $this->withoutExceptionHandling();
+
         $product = Product::create([
             'name' => 'Product 1',
             'price' => 100
