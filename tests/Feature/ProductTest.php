@@ -2,15 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\NewProductNotifyJob;
 use App\Jobs\ProductPublishJob;
+use App\Mail\NewProductCreated;
 use App\Models\Product;
 use App\Models\User;
+use App\Notifications\NewProductCreatedNotification;
 use App\Services\ProductService;
 use Brick\Math\Exception\NumberFormatException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
+//use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 use Carbon\Carbon;
 class ProductTest extends TestCase
@@ -392,6 +399,36 @@ class ProductTest extends TestCase
         $lastProduct = Product::latest()->first();
         $this->assertEquals($lastProduct->name, $lastProduct->name);
         Storage::assertExists('product/photos/' . $fileName);
+    }
+
+    public function test_product_create_job_notification_dispatched_successfully()
+    {
+        Bus::fake();
+        $product = [
+            'name' => 'Product 123',
+            'price' => 100
+        ];
+
+        $response = $this->actingAs($this->admin)->post('/product/store', $product);
+        $response->assertRedirect('/products');
+
+        Bus::assertDispatched(NewProductNotifyJob::class);
+    }
+
+    public function test_product_create_mail_sent_successfully()
+    {
+        Mail::fake();
+        Notification::fake();
+
+        $product = [
+            'name' => 'Product 123',
+            'price' => 100
+        ];
+
+        $response = $this->followingRedirects()->actingAs($this->admin)->post('/product/store', $product);
+
+        Mail::assertSent(NewProductCreated::class);
+        Notification::assertSentTo($this->admin, NewProductCreatedNotification::class);
     }
 
 }
