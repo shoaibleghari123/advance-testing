@@ -9,7 +9,7 @@
         <!-- Validation Errors -->
         <x-auth-validation-errors class="mb-4" :errors="$errors" />
 
-        <form method="POST" action="{{ route('products.store') }}">
+        <form method="POST" action="{{ route('products.store') }}" enctype="multipart/form-data">
             @csrf
 
             <!-- Name -->
@@ -23,6 +23,10 @@
                 <x-input id="price" class="block mt-1 w-full" type="text" name="price" :value="old('price')" required autofocus />
             </div>
 
+            <div>
+                <x-label for="photo" :value="__('Photo')" />
+                <input type="file" id="photo" name="photo" class="block mt-1 w-full">
+            </div>
 
             <div class="flex items-center justify-end mt-4">
                 <x-button class="ml-4">{{ __('create') }}</x-button>

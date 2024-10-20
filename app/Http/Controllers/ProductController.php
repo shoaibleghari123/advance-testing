@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -15,7 +16,7 @@ class ProductController extends Controller
     public function index()
     {
         $products = Product::paginate(10);
-
+        //$products = Product::published()->paginate(10);
         return view('product', compact('products'));
     }
 
@@ -42,7 +43,13 @@ class ProductController extends Controller
             'price' => 'required',
         ]);
 
-        Product::create($product);
+       $product = Product::create($product);
+
+        if (request()->hasFile('photo')) {
+            $fileName = request()->file('photo')->getClientOriginalName();
+            request()->file('photo')->storeAs('product/photos', $fileName);
+            $product->update(['photo' => $fileName]);
+        }
         return redirect()->route('products.index');
     }
 

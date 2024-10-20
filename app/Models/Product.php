@@ -6,13 +6,14 @@ use App\Exceptions\CurrencyRateNotFoundException;
 use App\Services\CurrencyService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+//use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 class Product extends Model
 {
     use HasFactory;
 
     protected $table = 'product';
-    protected $fillable = ['name', 'price', 'is_published', 'published_at'];
+    protected $fillable = ['name', 'price', 'is_published', 'published_at', 'photo'];
 
     public function getPriceEurAttribute()
     {
@@ -28,5 +29,10 @@ class Product extends Model
     public function setPriceAttribute($value)
     {
         $this->attributes['price'] = $value * 100;
+    }
+
+    public function scopePublished(Builder $query) : Builder
+    {
+        return $query->whereNotNull('published_at')->where('published_at', '<=', now());
     }
 }

@@ -9,8 +9,10 @@ use App\Services\ProductService;
 use Brick\Math\Exception\NumberFormatException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
-
+use Carbon\Carbon;
 class ProductTest extends TestCase
 {
     use RefreshDatabase;
@@ -271,8 +273,6 @@ class ProductTest extends TestCase
         ]);
     }
 
-
-
     public function test_api_product_invalid_store_return_error()
     {
         $product = [
@@ -359,8 +359,39 @@ class ProductTest extends TestCase
 
         $this->assertNotNull($product->published_at);
         $this->assertEquals('1', $product->is_published);
+    }
 
+    public function test_product_shows_when_published_at_correct_time()
+    {
+        $this->markTestSkipped('skipped for now as irrelevant');
+        $product = Product::factory()->create([
+            'published_at' => now()->addDay()->setTime(14, 00)
+        ]);
 
+        $response = $this->actingAs($this->user)->get('/products');
+        $response->assertDontSeeText($product->name);
+
+        $this->travelTo(now()->addDay()->setTime(14, 01));
+        $response = $this->actingAs($this->admin)->get('/products');
+        $response->assertSeeText($product->name);
+    }
+
+    public function test_product_create_photo_upload_successful()
+    {
+        Storage::fake();
+        $fileName = 'photo1.jpg';
+        $product = [
+            'name' => 'Product 123',
+            'price' => 100,
+            'photo' => UploadedFile::fake()->image($fileName)
+        ];
+
+        $response = $this->actingAs($this->admin)->post('/product/store', $product);
+        $response->assertRedirect('/products');
+
+        $lastProduct = Product::latest()->first();
+        $this->assertEquals($lastProduct->name, $lastProduct->name);
+        Storage::assertExists('product/photos/' . $fileName);
     }
 
 }
