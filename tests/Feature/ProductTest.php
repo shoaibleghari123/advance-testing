@@ -14,13 +14,6 @@ use Tests\TestCase;
 class ProductTest extends TestCase
 {
     use RefreshDatabase;
-    private $user, $admin;
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->user = $this->createUser();
-        $this->admin = $this->createUser(true);
-    }
 
     public function test_home_page_contains_empty_table()
     {
@@ -190,10 +183,7 @@ class ProductTest extends TestCase
         $this->assertDatabaseCount('product', 0);
     }
 
-    private function createUser($isAdmin=false) : User
-    {
-        return User::factory()->create(['is_admin' => $isAdmin]);
-    }
+
 
     public function test_api_return_products_list()
     {
