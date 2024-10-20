@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\NewProductNotifyJob;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -50,6 +51,9 @@ class ProductController extends Controller
             request()->file('photo')->storeAs('product/photos', $fileName);
             $product->update(['photo' => $fileName]);
         }
+
+        NewProductNotifyJob::dispatch($product);
+
         return redirect()->route('products.index');
     }
 
